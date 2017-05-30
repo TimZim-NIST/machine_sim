@@ -46,7 +46,7 @@ Adafruit BBIO - https://github.com/adafruit/adafruit-beaglebone-io-python
 ```
 # cd /etc/init.d/
 # chmod -x avahi-daemon
-# chmod -x console.setup
+# chmod -x console-setup
 # chmod -x keyboard-setup
 # chmod -x kmod
 # chmod -x lightdm
