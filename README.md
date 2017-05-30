@@ -1,6 +1,6 @@
 # Machine Simulator
 
-This script Python simulates MODBUS TCP server operations implemented by machine tools a typical manufacturing environment. The script was writtento be deployed on a Beaglebone Black. The machine operations are simulated with a simple state machine. MODBUS TCP registers are updated at the rate defined in SIMULATION_FREQ_HZ. The script does not operate in real-time, nor does the script attempt to compensate for any delays, so jitter will likely be present.
+The Python script simulates MODBUS TCP server operations implemented by machine tools a typical manufacturing environment. The script was written to be deployed on a Beaglebone Black. The machine operations are simulated with a simple state machine. MODBUS TCP registers are updated at the rate defined in SIMULATION_FREQ_HZ. The script does not operate in real-time, nor does the script attempt to compensate for any delays, so jitter will likely be present.
 
 Modified from https://pymodbus.readthedocs.io/en/latest/examples/updating-server.html
 
