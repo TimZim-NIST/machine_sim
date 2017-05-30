@@ -79,7 +79,35 @@ NameVirtualHost *.80
 Listen 80
 ```
 7. Reboot the BBB: ```shutdown -r now```
-8. Configure Networking
+8. Edit the ```/etc/network/interfaces``` file to the following: (modify the last octet to the correlating to the station number)
+
 ```
-Code
+# This file describes the network interfaces available on your system
+# and how to activate them. For more information, see interfaces(5).
+
+# The loopback network interface
+auto lo
+iface lo inet loopback
+
+# The primary network interface
+# This is the information regarding the ethernet static IP
+# Addresses are asigned as 192.168.[0 for Control Sys 1 for Field Comm].xyz
+auto eth0
+iface eth0 inet static
+address 192.168.1.xyz
+netmask 255.255.255.0
+gateway 192.168.1.2
+
+# Example to keep MAC address between reboots
+#hwaddress ether DE:AD:BE:EF:CA:FE
+
+# Ethernet/RNDIS gadget (g_ether)
+# Used by: /opt/scripts/boot/autoconfigure_usb0.sh
+# This is the information used for the static USB IP address
+iface usb0 inet static
+    address 192.168.7.xyz
+    netmask 255.255.255.0
+    network 192.168.7.0
+    gateway 192.168.7.1
+
 ```
