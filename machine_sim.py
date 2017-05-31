@@ -14,9 +14,9 @@ from pymodbus.datastore    import ModbusSlaveContext, ModbusServerContext
 from twisted.internet      import reactor
 from twisted.internet.task import LoopingCall
 
-from machine.py import Machine
+from machine import Machine
 
-import time, signal, sys
+import time, signal, sys, logging
 import Adafruit_BBIO.GPIO as GPIO
 
 def signal_handler(signal, frame):
@@ -26,7 +26,7 @@ def signal_handler(signal, frame):
 
 # Iterate the state machine (used by LoopingCall)
 def machine_iterate(a):
-    a[0].iterate(a[1], a[2], GPIO.input("GPIO0_7"))
+    a[0].iterate(a[1], GPIO.input("GPIO0_7"))
 
 def main():
     # Configure signal handler for KILL (CTRL+C)
@@ -44,6 +44,7 @@ def main():
     context = ModbusServerContext(slaves=store, single=True)
 
     # Configure logging
+    log = logging.getLogger()
     log.setLevel(logging.INFO)
     logging.basicConfig(format='%(asctime)-15s %(levelname)s:%(message)s',level=logging.INFO)
 

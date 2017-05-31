@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys, logging, traceback
+import sys, time, logging, traceback
 
 class Machine:
 
@@ -156,7 +156,7 @@ class Machine:
             self.__heartbeat()
             self.__push_mbtcp_out(a[0])
         except:
-            print "Unexpected error: " + traceback.print_exc()
+            print "Unexpected error: " + str(traceback.print_exc())
             raise
 
 def main():
