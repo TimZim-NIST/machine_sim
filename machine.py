@@ -8,6 +8,7 @@ class Machine:
     MACH_TIME           = 6.0
     OP_STATES           = { "OPEN":0, "CLOSED":1 }
     MACHINE_STATES      = { "UNLOADED":0,"LOADED":1,"ACTIVE":2,"FINISHED":3 }
+    VERSION             = 9999
 
     state               = MACHINE_STATES["UNLOADED"]
     last_state          = -1
@@ -30,9 +31,12 @@ class Machine:
     # Configure logging
     log = logging.getLogger()
 
-    def __init__(self,m_t):
+    def __init__(self,m_t,ver,m_id):
         self.MACH_TIME = m_t
-
+        self.VERSION = ver
+        self.log.info("Software version: " + str(self.VERSION))
+        self.ID = m_id
+        self.log.info("Station number: " + str(self.ID))
     ####################
     ## HELPER METHODS ##
     ####################
@@ -69,7 +73,7 @@ class Machine:
 
     def __push_mbtcp_out(self, context):
         mbtcp_di = [self.estop_state,self.door_state,self.chuck_state,self.stock_present]
-        mbtcp_ir = [self.state,self.machine_mode,self.progress,self.part_count,self.heartbeat,self.ID]
+        mbtcp_ir = [self.state,self.machine_mode,self.progress,self.part_count,self.heartbeat,self.ID,self.VERSION]
         context.setValues(2, 0x00, mbtcp_di)
         context.setValues(4, 0x00, mbtcp_ir)
 

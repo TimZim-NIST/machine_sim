@@ -19,6 +19,7 @@ Adafruit BBIO - https://github.com/adafruit/adafruit-beaglebone-io-python
 [0] ESTOP_IN - Machine will go into ESTOP if TRUE<br />
 [1] RESET - Resets counters<br />
 [2] ROBOT_PROXIMITY - Informs if the robot is in proximity<br />
+[3] EXIT - Kill the python process
 
 ##### Holding Registers (RW):
 [0] MACHINING_TIME - Amount of time machining process takes<br />
@@ -37,6 +38,7 @@ Adafruit BBIO - https://github.com/adafruit/adafruit-beaglebone-io-python
 [3] PART_COUNT - Number of completed parts<br />
 [4] HEARTBEAT_COUNTER - Monitor to verify sim is running<br />
 [5] MACHINE_ID - ID value for the machine (station number)<br />
+[6] SW_VERSION - Software version number
 
 ### Upgrade the BBB
 The most recent revision of this project uses the following image:
