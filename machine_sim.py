@@ -16,17 +16,26 @@ from twisted.internet.task import LoopingCall
 
 from machine import Machine
 
-import time, signal, sys, logging
-import Adafruit_BBIO.GPIO as GPIO
+import time, signal, sys, logging, platform
+
+bbb = (platform.uname()[1] == "beaglebone")
+
+if bbb: import Adafruit_BBIO.GPIO as GPIO
 
 def signal_handler(signal, frame):
     print "Received the shutdown signal..."
     reactor.stop()
     sys.exit()
 
+def __get_gpio(pin):
+    if bbb:
+        return GPIO.input(pin)
+    else:
+        return 0
+
 # Iterate the state machine (used by LoopingCall)
 def machine_iterate(a):
-    a[0].iterate(a[1], GPIO.input("GPIO0_7"))
+    a[0].iterate(a[1], __get_gpio("GPIO0_7"))
 
 def main():
     # Configure signal handler for KILL (CTRL+C)
@@ -50,7 +59,7 @@ def main():
 
     # Configure the I/O pin on the BBB
     # TODO: Create a device tree overlay for a different pin with a pull-up
-    GPIO.setup("GPIO0_7", GPIO.IN)
+    if bbb: GPIO.setup("GPIO0_7", GPIO.IN)
 
     # TODO: Add configuration file to obtain these parameters, and pass to object
     machine = Machine(6.0)
