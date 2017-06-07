@@ -7,20 +7,25 @@
 #
 # See README for description and information
 
+# Check if we are running on a BBB
+# Allows us to run the sim on a host without BBB packages
+import platform
+BBB = (platform.uname()[1] == "beaglebone")
+
+if BBB: import Adafruit_BBIO.GPIO as GPIO
+
 from pymodbus.server.async import StartTcpServer
 from pymodbus.device       import ModbusDeviceIdentification
 from pymodbus.datastore    import ModbusSequentialDataBlock
 from pymodbus.datastore    import ModbusSlaveContext, ModbusServerContext
 from twisted.internet      import reactor
 from twisted.internet.task import LoopingCall
+from machine               import Machine
 
-from machine import Machine
+import time, signal, sys, logging
 
-import time, signal, sys, logging, platform
-
-bbb = (platform.uname()[1] == "beaglebone")
-
-if bbb: import Adafruit_BBIO.GPIO as GPIO
+# Set this to True to see task performance on BBB pin GPIO1_28 (P9 PIN 12)
+PERF_MON = True
 
 def signal_handler(signal, frame):
     print "Received the shutdown signal..."
@@ -28,14 +33,16 @@ def signal_handler(signal, frame):
     sys.exit()
 
 def __get_gpio(pin):
-    if bbb:
+    if BBB:
         return GPIO.input(pin)
     else:
         return 0
 
 # Iterate the state machine (used by LoopingCall)
 def machine_iterate(a):
+    if BBB and PERF_MON: GPIO.output("GPIO1_28",1)
     a[0].iterate(a[1], __get_gpio("GPIO0_7"))
+    if BBB and PERF_MON: GPIO.output("GPIO1_28",0)
 
 def main():
     # Configure signal handler for KILL (CTRL+C)
@@ -59,7 +66,8 @@ def main():
 
     # Configure the I/O pin on the BBB
     # TODO: Create a device tree overlay for a different pin with a pull-up
-    if bbb: GPIO.setup("GPIO0_7", GPIO.IN)
+    if BBB: GPIO.setup("GPIO0_7",  GPIO.IN)  #
+    if BBB and PERF_MON: GPIO.setup("GPIO1_28", GPIO.OUT)
 
     # TODO: Add configuration file to obtain these parameters, and pass to object
     machine = Machine(6.0)
