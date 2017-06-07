@@ -14,6 +14,7 @@ import platform
 BBB = (platform.uname()[1] == "beaglebone")
 
 if BBB: import Adafruit_BBIO.GPIO as GPIO
+if BBB: import Adafruit_BBIO.UART as UART
 
 from pymodbus.server.async import StartTcpServer
 from pymodbus.device       import ModbusDeviceIdentification
@@ -23,13 +24,16 @@ from twisted.internet      import reactor
 from twisted.internet.task import LoopingCall
 from machine               import Machine
 
-import time, signal, sys, logging, ConfigParser
+import time, signal, sys, logging, ConfigParser, serial
 
 # Set this to True to see task performance on BBB pin GPIO1_28 (P9 PIN 12)
 PERF_MON = True
 
 # Machine_sim version increment upon major changes
 SW_VERSION = 1
+
+# LCD splash-screen
+
 
 def signal_handler(signal, frame):
     print "Received the shutdown signal..."
@@ -45,7 +49,7 @@ def __get_gpio(pin):
 # Iterate the state machine (used by LoopingCall)
 def machine_iterate(a):
     if BBB and PERF_MON: GPIO.output("GPIO1_28",1)
-    a[0].iterate(a[1], __get_gpio("GPIO0_7"))
+    a[0].iterate(a[1], __get_gpio(sensor_GPIO))
     if BBB and PERF_MON: GPIO.output("GPIO1_28",0)
 
 def main():
@@ -82,6 +86,31 @@ def main():
     log.info("Sensor GPIO: " + cfg_sensor_GPIO)
     log.info("Simulation frequency: " + str(cfg_simulation_frequency))
 
+    if BBB: UART.setup("UART1")
+
+    if BBB: ser = serial.Serial(port = "/dev/ttyO1", baudrate=9600)
+    if BBB: ser.close()
+    if BBB: ser.open()
+    if BBB: t = 0
+
+    if ser.isOpen():
+
+      ser.write(b"\xfe\x01")
+      while True:
+           if t < 2:
+             ser.write(b"\xfe\x01")
+             ser.write("Machine Sim v" + str(SW_VERSION))
+             t = t+1
+           elif t >= 2 and t<=4:
+             ser.write(b"\xfe\x01")
+             ser.write("Station_Number: " + str(cfg_station_number))
+             t = t+1
+           else:
+             t = 0
+           time.sleep(1)
+
+     ser.close()
+     
 
     # Configure the I/O pin on the BBB
     # TODO: Create a device tree overlay for a different pin with a pull-up

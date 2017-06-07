@@ -128,3 +128,9 @@ Listen 80
   minpoll 4
   maxpoll 6
 ```
+15. Configure GPIO pin UART1 for the LCD by going to ```cd /boot/uEnv.txt```. Change the following: 
+```
+##Example v4.1.x,
+# cape_disable=bone_capemgr.disable_partno=
+cape_enable=bone_capemgr.enable_partno=BB-UART1
+```
