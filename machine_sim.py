@@ -85,12 +85,9 @@ def main():
 
     # Configure the I/O pin on the BBB
     # TODO: Create a device tree overlay for a different pin with a pull-up
-<<<<<<< HEAD
-    if bbb: GPIO.setup(cfg_sensor_GPIO, GPIO.IN)
-=======
-    if BBB: GPIO.setup("GPIO0_7",  GPIO.IN)  #
+    if BBB: GPIO.setup(cfg_sensor_GPIO,  GPIO.IN)  #
     if BBB and PERF_MON: GPIO.setup("GPIO1_28", GPIO.OUT)
->>>>>>> 1009d7120b11fe77a92939d9c4a4f82f287adbf5
+
 
     # TODO: Add configuration file to obtain these parameters, and pass to object
     machine = Machine(cfg_machine_time, SW_VERSION, cfg_station_number)
