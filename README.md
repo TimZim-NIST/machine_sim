@@ -110,26 +110,27 @@ Listen 80
       network 192.168.7.0
       gateway 192.168.7.1
 ```
-10. Add a new user called 'machine' to the environment: ```adduser machine```. Add this user to the sudo group: ```usermod -aG sudo machine```. Exit the SSH session and reconnect as 'machine'. Disable the 'debian' user: ```chage -E 0 debian```.
-11. Add the following alias in ```~/.bashrc```:
+10. Add a new user called 'machine' to the environment: ```adduser machine```. Add this user to the sudo group: ```usermod -aG sudo machine```. Exit the SSH session and reconnect as 'machine'.
+11. Disable the 'debian' user: ```chage -E 0 debian```.
+12. Add the following alias in ```~/.bashrc```:
 ```
   alias ll='ls -al'
 ```
-12. Install the following packages:
+13. Install the following packages:
 ```
   apt install python-pymodbus python-twisted
 ```
-13. Add the bash shell script as a cron job that executes every minute to check if the machine is running. Execute: ```crontab -e```. NOTE: It may be smart to comment this line out in the cron table until you're ready to have the machine run automatically:
+14. Add the bash shell script as a cron job that executes every minute to check if the machine is running. Execute: ```crontab -e```. NOTE: It may be smart to comment this line out in the cron table until you're ready to have the machine run automatically:
 ```
   * * * * * /home/machine/Projects/machine_sim/machine_check.sh
 ```
-14. Install the 'ntp' package: ```apt install ntp```. Open NTP Configuration: ```cd /etc``` and Edit the NTP configuration: ```nano ntp.conf```. Comment out all default NTP pool servers, and add the following:
+15. Install the 'ntp' package: ```apt install ntp```. Open NTP Configuration: ```cd /etc``` and Edit the NTP configuration: ```nano ntp.conf```. Comment out all default NTP pool servers, and add the following:
 ```
   server 192.168.1.2
   minpoll 4
   maxpoll 6
 ```
-15. Configure GPIO pin UART1 for the LCD by going to ```cd /boot/uEnv.txt```. Change the following:
+16. Configure GPIO pin UART1 for the LCD by going to ```cd /boot/uEnv.txt```. Change the following:
 ```
 ##Example v4.1.x,
 # cape_disable=bone_capemgr.disable_partno=

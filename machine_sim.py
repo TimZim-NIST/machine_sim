@@ -32,7 +32,6 @@ PERF_MON = True
 
 # Machine_sim version increment upon major changes
 SW_VERSION = 1
-
 ser = None
 cfg_station_number = None
 
@@ -51,7 +50,6 @@ def lcd_string_creator(machine_station_num, machine_state, machine_progress, mac
 
     if BBB:
         if ser.isOpen():
-
 
     # UNLOADED
             if machine_state == 0:
@@ -98,34 +96,19 @@ def lcd_string_creator(machine_station_num, machine_state, machine_progress, mac
                 elif machine_progress >= 10 and machine_progress < 100:
                     ser.write(b"\xfe\x80")
                     ser.write("ACTIVE     Sta:" + str(machine_station_num) + total_bars + total_spaces + str(machine_progress) + "%")
-                elif machine_progress == 100:
-                    total_spaces = "   "
-                    ser.write(b"\xfe\x80")
-                    ser.write("ACTIVE     Sta:" + str(machine_station_num) + total_bars + total_spaces + str(machine_progress) + "%")
     # FINISHED
             elif machine_state == 3:
                 ser.write(b"\xfe\x80")
                 if machined_parts < 10:
                     ser.write(b"\xfe\x80")
-                    ser.write("Finished   Sta:" + str(machine_station_num) + "Part Counter:  " + str(machined_parts))
+                    ser.write("FINISHED   Sta:" + str(machine_station_num) + "Part Counter:  " + str(machined_parts))
                 elif machined_parts > 99:
                     ser.write(b"\xfe\x80")
-                    ser.write("Finished   Sta:" + str(machine_station_num) + "Part Counter:"   + str(machined_parts))
+                    ser.write("FINISHED   Sta:" + str(machine_station_num) + "Part Counter:"   + str(machined_parts))
                 elif machined_parts > 9:
                     ser.write(b"\xfe\x80")
-                    ser.write("Finished   Sta:" + str(machine_station_num) + "Part Counter: "  + str(machined_parts))
+                    ser.write("FINISHED   Sta:" + str(machine_station_num) + "Part Counter: "  + str(machined_parts))
 
-    # STOPPED   -- add this state to machine.py. should we add total parts to produce as a variable so we can use this state?
-'''        elif machined_state == 4:
-                if machined_parts < 10:
-                    ser.write("Stop       Sta:" + str(machine_station_num) + "Part Counter:  " + str(machined_parts))
-                elif machined_parts > 99:
-                    ser.write("Stop       Sta:" + str(machine_station_num) + "Part Counter:"   + str(machined_parts))
-                elif machine_parts > 9:
-                    ser.write("Stop       Sta:" + str(machine_station_num) + "Part Counter: "  + str(machined_parts))
-
-'''
-    #print "Station num: " + str(machine_station_num) + "  State: " + str(machine_state) + "  Progress: " + str(machine_progress) + "%"
 
 # Iterate the state machine (used by LoopingCall)
 def machine_iterate(a):
@@ -133,14 +116,12 @@ def machine_iterate(a):
 
     if BBB and PERF_MON: GPIO.output("GPIO1_28",1)
     machine_values =  a[0].iterate(a[1], __get_gpio("GPIO0_7"))
-#    print str(machine_values)
-    #a[0].iterate(a[1], __get_gpio("GPIO0_7"))
-    #lcd_string = lcd_string_creator(cfg_station_number, 3, 97, 23)
     lcd_string = lcd_string_creator(cfg_station_number, machine_values[0], machine_values[1], machine_values[2])
     if BBB and PERF_MON: GPIO.output("GPIO1_28",0)
 
 def main():
     global ser, cfg_station_number
+
     # Configure signal handler for KILL (CTRL+C)
     signal.signal(signal.SIGINT, signal_handler)
 
@@ -157,10 +138,10 @@ def main():
     log.setLevel(logging.INFO)
     logging.basicConfig(format='%(asctime)-15s %(levelname)s:%(message)s')
 
-    # Pull in variables from Configuration file
+    # Variables from Configuration file
     try:
         config = ConfigParser.RawConfigParser()
-        config.read("/home/machine/Projects/machine_sim/station.cfg")
+        config.read("./station.cfg")
         cfg_station_number = config.getint("Station","station_number")
         cfg_machine_time = config.getfloat("Station","machine_time")
         cfg_sensor_GPIO = config.get("Station","sensor_GPIO")
