@@ -8,6 +8,7 @@ class Machine:
     MACH_TIME           = 6.0
     OP_STATES           = { "OPEN":0, "CLOSED":1 }
     MACHINE_STATES      = { "UNLOADED":0,"LOADED":1,"ACTIVE":2,"FINISHED":3 }
+    VERSION             = 9999
 
     state               = MACHINE_STATES["UNLOADED"]
     last_state          = -1
@@ -30,9 +31,12 @@ class Machine:
     # Configure logging
     log = logging.getLogger()
 
-    def __init__(self,m_t):
+    def __init__(self,m_t,ver,m_id):
         self.MACH_TIME = m_t
-
+        self.VERSION = ver
+        self.log.info("Software version: " + str(self.VERSION))
+        self.ID = m_id
+        self.log.info("Station number: " + str(self.ID))
     ####################
     ## HELPER METHODS ##
     ####################
@@ -69,7 +73,7 @@ class Machine:
 
     def __push_mbtcp_out(self, context):
         mbtcp_di = [self.estop_state,self.door_state,self.chuck_state,self.stock_present]
-        mbtcp_ir = [self.state,self.machine_mode,self.progress,self.part_count,self.heartbeat,self.ID]
+        mbtcp_ir = [self.state,self.machine_mode,self.progress,self.part_count,self.heartbeat,self.ID,self.VERSION]
         context.setValues(2, 0x00, mbtcp_di)
         context.setValues(4, 0x00, mbtcp_ir)
 
@@ -99,7 +103,9 @@ class Machine:
         if self.stock_present == False:
             self.log.error("Stock removed from chuck!")
             self.progress = 0
+            self.mach_end_time = None
             self.state = self.MACHINE_STATES["FINISHED"]
+            return
         t = time.time()
         if self.mach_end_time == None:
             self.mach_start_time = t
@@ -146,15 +152,21 @@ class Machine:
                 self.prev_state = self.last_state
                 self.last_state = self.state
             # State Machine
-            if   self.state == self.MACHINE_STATES["UNLOADED"]:  self.__state_unloaded()
-            elif self.state == self.MACHINE_STATES["LOADED"]:    self.__state_loaded()
-            elif self.state == self.MACHINE_STATES["ACTIVE"]:    self.__state_active()
-            elif self.state == self.MACHINE_STATES["FINISHED"]:  self.__state_finished()
+            if   self.state == self.MACHINE_STATES["UNLOADED"]:
+                self.__state_unloaded()
+            elif self.state == self.MACHINE_STATES["LOADED"]:
+                self.__state_loaded()
+            elif self.state == self.MACHINE_STATES["ACTIVE"]:
+                self.__state_active()
+            elif self.state == self.MACHINE_STATES["FINISHED"]:
+                self.__state_finished()
             else:
                 print "ERROR: Invalid State"
                 exit()
             self.__heartbeat()
             self.__push_mbtcp_out(a[0])
+
+            return [self.state, self.progress, self.part_count]
         except:
             print "Unexpected error: " + str(traceback.print_exc())
             raise

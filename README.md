@@ -5,6 +5,7 @@ The Python script simulates MODBUS TCP server operations implemented by machine 
 Modified from https://pymodbus.readthedocs.io/en/latest/examples/updating-server.html
 
 Author: Timothy Zimmerman (timothy.zimmerman@nist.gov)<br />
+Modified by: Christian Burns (christian.burns@nist.gov)<br />
 Organization: National Institute of Standards and Technology,
 U.S. Department of Commerce<br />
 License: Public Domain<br />
@@ -12,13 +13,14 @@ License: Public Domain<br />
 ### Dependencies
 pymodbus - https://pypi.python.org/pypi/pymodbus<br />
 Twisted - https://pypi.python.org/pypi/Twisted<br />
-Adafruit BBIO - https://github.com/adafruit/adafruit-beaglebone-io-python
+Adafruit BBIO - https://github.com/adafruit/adafruit-beaglebone-io-python<br />
 
 ### MBTCP BITS AND REGISTERS
 ##### Coils (RW):
 [0] ESTOP_IN - Machine will go into ESTOP if TRUE<br />
 [1] RESET - Resets counters<br />
 [2] ROBOT_PROXIMITY - Informs if the robot is in proximity<br />
+[3] EXIT - Kill the python process<br />
 
 ##### Holding Registers (RW):
 [0] MACHINING_TIME - Amount of time machining process takes<br />
@@ -37,6 +39,7 @@ Adafruit BBIO - https://github.com/adafruit/adafruit-beaglebone-io-python
 [3] PART_COUNT - Number of completed parts<br />
 [4] HEARTBEAT_COUNTER - Monitor to verify sim is running<br />
 [5] MACHINE_ID - ID value for the machine (station number)<br />
+[6] SW_VERSION - Software version number<br />
 
 ### Upgrade the BBB
 The most recent revision of this project uses the following image:
@@ -107,22 +110,29 @@ Listen 80
       network 192.168.7.0
       gateway 192.168.7.1
 ```
-10. Add a new user called 'machine' to the environment: ```adduser machine```. Add this user to the sudo group: ```usermod -aG sudo machine```. Exit the SSH session and reconnect as 'machine'. Disable the 'debian' user: ```chage -E 0 debian```.
-11. Add the following alias in ```~/.bashrc```:
+10. Add a new user called 'machine' to the environment: ```adduser machine```. Add this user to the sudo group: ```usermod -aG sudo machine```. Exit the SSH session and reconnect as 'machine'.
+11. Disable the 'debian' user: ```chage -E 0 debian```.
+12. Add the following alias in ```~/.bashrc```:
 ```
   alias ll='ls -al'
 ```
-12. Install the following packages:
+13. Install the following packages:
 ```
   apt install python-pymodbus python-twisted
 ```
-13. Add the bash shell script as a cron job that executes every minute to check if the machine is running. Execute: ```crontab -e```. NOTE: It may be smart to comment this line out in the cron table until you're ready to have the machine run automatically:
-```
-  * * * * * /home/machine/Projects/machine_sim/machine_check.sh
-```
-14. Install the 'ntp' package: ```apt install ntp```. Edit the NTP configuration: ```nano ntp.conf```. Comment out all default NTP pool servers, and add the following:
+14. Install the 'ntp' package: ```apt install ntp```. Open NTP Configuration: ```cd /etc``` and Edit the NTP configuration: ```nano ntp.conf```. Comment out all default NTP pool servers, and add the following:
 ```
   server 192.168.1.2
   minpoll 4
   maxpoll 6
+```
+15. Configure GPIO pin UART1 for the LCD by going to ```cd /boot/uEnv.txt```. Change the following:
+```
+##Example v4.1.x,
+# cape_disable=bone_capemgr.disable_partno=
+cape_enable=bone_capemgr.enable_partno=BB-UART1
+```
+16. Add the bash shell script as a cron job that executes every minute to check if the machine is running. Execute: ```crontab -e```. NOTE: It may be smart to comment this line out in the cron table until you're ready to have the machine run automatically:
+```
+  * * * * * /home/machine/Projects/machine_sim/machine_check.sh
 ```
