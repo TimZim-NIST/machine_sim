@@ -1,5 +1,5 @@
 [Station]
-station_number = 2
+station_number = 4
 machine_time = 6
 sensor_GPIO = "GPIO0_7"
 simulation_frequency = 10

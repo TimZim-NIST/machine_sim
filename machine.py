@@ -103,7 +103,9 @@ class Machine:
         if self.stock_present == False:
             self.log.error("Stock removed from chuck!")
             self.progress = 0
+            self.mach_end_time = None
             self.state = self.MACHINE_STATES["FINISHED"]
+            return
         t = time.time()
         if self.mach_end_time == None:
             self.mach_start_time = t
@@ -150,15 +152,21 @@ class Machine:
                 self.prev_state = self.last_state
                 self.last_state = self.state
             # State Machine
-            if   self.state == self.MACHINE_STATES["UNLOADED"]:  self.__state_unloaded()
-            elif self.state == self.MACHINE_STATES["LOADED"]:    self.__state_loaded()
-            elif self.state == self.MACHINE_STATES["ACTIVE"]:    self.__state_active()
-            elif self.state == self.MACHINE_STATES["FINISHED"]:  self.__state_finished()
+            if   self.state == self.MACHINE_STATES["UNLOADED"]:
+                self.__state_unloaded()
+            elif self.state == self.MACHINE_STATES["LOADED"]:
+                self.__state_loaded()
+            elif self.state == self.MACHINE_STATES["ACTIVE"]:
+                self.__state_active()
+            elif self.state == self.MACHINE_STATES["FINISHED"]:
+                self.__state_finished()
             else:
                 print "ERROR: Invalid State"
                 exit()
             self.__heartbeat()
             self.__push_mbtcp_out(a[0])
+
+            return [self.state, self.progress, self.part_count]
         except:
             print "Unexpected error: " + str(traceback.print_exc())
             raise
