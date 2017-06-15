@@ -120,19 +120,19 @@ Listen 80
 ```
   apt install python-pymodbus python-twisted
 ```
-14. Add the bash shell script as a cron job that executes every minute to check if the machine is running. Execute: ```crontab -e```. NOTE: It may be smart to comment this line out in the cron table until you're ready to have the machine run automatically:
-```
-  * * * * * /home/machine/Projects/machine_sim/machine_check.sh
-```
-15. Install the 'ntp' package: ```apt install ntp```. Open NTP Configuration: ```cd /etc``` and Edit the NTP configuration: ```nano ntp.conf```. Comment out all default NTP pool servers, and add the following:
+14. Install the 'ntp' package: ```apt install ntp```. Open NTP Configuration: ```cd /etc``` and Edit the NTP configuration: ```nano ntp.conf```. Comment out all default NTP pool servers, and add the following:
 ```
   server 192.168.1.2
   minpoll 4
   maxpoll 6
 ```
-16. Configure GPIO pin UART1 for the LCD by going to ```cd /boot/uEnv.txt```. Change the following:
+15. Configure GPIO pin UART1 for the LCD by going to ```cd /boot/uEnv.txt```. Change the following:
 ```
 ##Example v4.1.x,
 # cape_disable=bone_capemgr.disable_partno=
 cape_enable=bone_capemgr.enable_partno=BB-UART1
+```
+16. Add the bash shell script as a cron job that executes every minute to check if the machine is running. Execute: ```crontab -e```. NOTE: It may be smart to comment this line out in the cron table until you're ready to have the machine run automatically:
+```
+  * * * * * /home/machine/Projects/machine_sim/machine_check.sh
 ```
