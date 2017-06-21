@@ -17,7 +17,7 @@ if [ -z $RESULT ]; then
   # If the pgrep does not return a result, the python script is NOT running
   # so we need to start it (and dump the output to NULL)
   cd /home/machine/Projects/machine_sim
-  ./machine_sim.py &> ./crash.log &
+  ./machine_sim.py &> /dev/null &
 fi
 
 exit 1

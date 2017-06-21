@@ -64,8 +64,8 @@ If connection sharing is required, follow this guide: https://elementztechblog.w
 # chmod -x screen-cleanup
 # chmod -x wicd
 # chmod -x x11-common
-# sudo apt purge lightdm
-# sudo apt purge lxqt*
+# sudo apt-get purge lightdm
+# sudo apt-get purge lxqt*
 ```
 4. Perform the following to disable cloud9: (http://kacangbawang.com/beagleboneblack-revc-debloat-part-1/):
 ```
@@ -90,25 +90,28 @@ If connection sharing is required, follow this guide: https://elementztechblog.w
 Listen 80
 ```
 7. Reboot the BBB: ```shutdown -r now```
-8. Edit the ```/etc/network/interfaces``` file. The eth0 interface should be configured with a 192.168.1.10x IP address, where x = the station number, in order to operate properly in the NIST testbed. To make ssh connections easier, each usb0 interface should be configured with a 192.168.7.y IP address, where y = the board's serial number, located on the top of the Ethernet RJ-45 connector (DO NOT FORGET TO UPDATE THE NETMASK TO 255.255.255.0):
+8. Configure USB networking. The USB interface should be configured with 192.168.7.<beaglebone number> To make ssh connections easier, each usb0 interface should be configured with a 192.168.7.y IP address, where y = the board's serial number, located on the top of the Ethernet RJ-45 connector (DO NOT FORGET TO UPDATE THE NETMASK TO 255.255.255.0):
 ```
-  # The primary network interface
-  # This is the information regarding the ethernet static IP
-  # Addresses are asigned as 192.168.[0 for Control Sys 1 for Field Comm].xyz
-  auto eth0
-  iface eth0 inet static
-  address 192.168.1.10x
-  netmask 255.255.255.0
-  gateway 192.168.1.2
-
-  # Ethernet/RNDIS gadget (g_ether)
-  # Used by: /opt/scripts/boot/autoconfigure_usb0.sh
-  # This is the information used for the static USB IP address
-  iface usb0 inet static
-      address 192.168.7.y
-      netmask 255.255.255.0
-      network 192.168.7.0
-      gateway 192.168.7.1
+cd /etc/networking
+sudo nano interfaces
+add the following:
+# Ethernet/RNDIS gadget (g_ether)
+# Used by: /opt/scripts/boot/autoconfigure_usb0.sh
+# This is the information used for the static USB IP address
+iface usb0 inet static
+    address 192.168.7.X
+    netmask 255.255.255.0
+    network 192.168.7.0
+    gateway 192.168.7.1
+```
+9. Configure Ethernet networking using connmanctl. The eth0 interface should be configured with a 192.168.1.10x IP address, where x = the station number, in order to operate properly in the NIST testbed.
+```
+sudo -s
+connmanctl
+>services
+> config <service> --ipv4 manual <192.168.1.10x> 255.255.255.0 192.168.1.2
+> Exit
+systemctl restart networking
 ```
 10. Add a new user called 'machine' to the environment: ```adduser machine```. Add this user to the sudo group: ```usermod -aG sudo machine```. Exit the SSH session and reconnect as 'machine'.
 11. Disable the 'debian' user: ```chage -E 0 debian```.
@@ -120,19 +123,19 @@ Listen 80
 ```
   apt install python-pymodbus python-twisted
 ```
-14. Add the bash shell script as a cron job that executes every minute to check if the machine is running. Execute: ```crontab -e```. NOTE: It may be smart to comment this line out in the cron table until you're ready to have the machine run automatically:
-```
-  * * * * * /home/machine/Projects/machine_sim/machine_check.sh
-```
-15. Install the 'ntp' package: ```apt install ntp```. Open NTP Configuration: ```cd /etc``` and Edit the NTP configuration: ```nano ntp.conf```. Comment out all default NTP pool servers, and add the following:
-```
-  server 192.168.1.2
-  minpoll 4
-  maxpoll 6
-```
-16. Configure GPIO pin UART1 for the LCD by going to ```cd /boot/uEnv.txt```. Change the following:
+14. Configure GPIO pin UART1 for the LCD by going to ```cd /boot/uEnv.txt```. Change the following:
 ```
 ##Example v4.1.x,
 # cape_disable=bone_capemgr.disable_partno=
 cape_enable=bone_capemgr.enable_partno=BB-UART1
+```
+15. Add the bash shell script as a cron job that executes every minute to check if the machine is running. Execute: ```crontab -e```. NOTE: It may be smart to comment this line out in the cron table until you're ready to have the machine run automatically:
+```
+  * * * * * /home/machine/Projects/machine_sim/machine_check.sh
+```
+16. Install the 'ntp' package: ```apt install ntp```. Open NTP Configuration: ```cd /etc``` and Edit the NTP configuration: ```nano ntp.conf```. Comment out all default NTP pool servers, and add the following:
+```
+  server 192.168.1.2
+  minpoll 4
+  maxpoll 6
 ```
