@@ -11,6 +11,9 @@
 #   crontab -e
 #   * * * * * /home/machine/Projects/machine_sim/machine_check.sh
 
+# DO NOT REMOVE THIS! Required to properly force a simulator to restart
+sleep 1
+
 RESULT=`pgrep -f machine_sim.py`
 
 if [ -z $RESULT ]; then

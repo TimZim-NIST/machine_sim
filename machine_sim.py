@@ -100,9 +100,9 @@ def lcd_string_creator(machine_station_num, machine_state, machine_progress, mac
     # STOPPED
 
                 if machined_parts < 10   and machine_state == 4:
-                    lcd = "STOPPED    Sta:" + str(machine_station_num) + "Part Counter: " + str(machined_parts)
+                    lcd = "STOPPED    Sta:" + str(machine_station_num) + "Part Counter:  " + str(machined_parts)
                 elif machined_parts < 99 and machine_state == 4:
-                    lcd = "STOPPED    Sta:" + str(machine_station_num) + "Part Counter: " + str(machined_parts)
+                    lcd = "STOPPED    Sta:" + str(machine_station_num) + "Part Counter:" + str(machined_parts)
                 elif machined_parts > 9  and machine_state == 4:
                     lcd = "STOPPED    Sta:" + str(machine_station_num) + "Part Counter: " + str(machined_parts)
     # TROUBLE
@@ -110,7 +110,7 @@ def lcd_string_creator(machine_station_num, machine_state, machine_progress, mac
                 if machined_parts < 10   and machine_state == 5:
                     lcd = "TROUBLE    Sta:" + str(machine_station_num) + "Part Counter: " + str(machined_parts)
                 elif machined_parts < 99 and machine_state == 5:
-                    lcd = "TROUBLE    Sta:" + str(machine_station_num) + "Part Counter: " + str(machined_parts)
+                    lcd = "TROUBLE    Sta:" + str(machine_station_num) + "Part Counter:" + str(machined_parts)
                 elif machined_parts > 9  and machine_state == 5:
                     lcd = "TROUBLE    Sta:" + str(machine_station_num) + "Part Counter: " + str(machined_parts)
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys, time, logging, traceback
+import sys, time, logging, traceback, os, signal
 
 class Machine:
 
@@ -67,10 +67,11 @@ class Machine:
     ###################
     def __parse_mbtcp_in(self, context):
         # COILS
-        mbtcp_co = context.getValues(1, 0x00, count=3)
-        self.mbtcp_in_estop      = mbtcp_co[0]
-        self.mbtcp_in_reset_part = mbtcp_co[1]
-        self.mbtcp_in_robotprox  = mbtcp_co[2]
+        mbtcp_co = context.getValues(1, 0x00, count=4)
+        self.mbtcp_in_estop          = mbtcp_co[0]
+        self.mbtcp_in_reset_part     = mbtcp_co[1]
+        self.mbtcp_in_robotprox      = mbtcp_co[2]
+        self.mbtcp_in_force_shutdown = mbtcp_co[3]
         # HOLDING REGISTERS
         mbtcp_hr = context.getValues(3, 0x00, count=2)
         if mbtcp_hr[0] == 0:
@@ -134,7 +135,7 @@ class Machine:
             self.progress = int(100*((t - self.mach_start_time) / self.MACH_TIME))
             self.log.info("Progress: " + str(self.progress) + "%")
         return
-        
+
     def __state_finished(self):
         self.__chuck("OPEN")
         self.__door("OPEN")
@@ -148,7 +149,7 @@ class Machine:
     def __state_stopped(self):
         self.log.info("STOPPED")
         if self.mbtcp_in_mode == 1:
-            self.MACHINE_STATES["UNLOADED"]
+            self.state = self.MACHINE_STATES["UNLOADED"]
         self.machine_mode = self.mbtcp_in_mode
         return
 
@@ -172,13 +173,15 @@ class Machine:
 
     def __part_reset(self):
         if self.mbtcp_in_reset_part == True:
-            if self.state == self.MACHINE_STATES["STOPPED"] or self.state == self.MACHINE_STATES["UNLOADED"]:
-                self.part_count = 0
-                self.mbtcp_in_reset_part = False
-            else:
-                self.log.warning("PART RESET ERROR. CURRENT STATE: " + str(state))
+            self.part_count = 0
+            self.mbtcp_in_reset_part = False
         return
 
+    def __force_shutdown(self):
+        if self.mbtcp_in_force_shutdown == True:
+            self.mbtcp_in_force_shutdown = False
+            os.system("/home/machine/Projects/machine_sim/machine_check.sh &")
+            os.kill(os.getpid(), signal.SIGKILL)
 
         ###############
         ## HEARTBEAT ##
@@ -218,7 +221,9 @@ class Machine:
             else:
                 print "ERROR: Invalid State"
                 exit()
+            self.__part_reset()
             self.__heartbeat()
+            self.__force_shutdown()
             self.__push_mbtcp_out(a[0])
             return [self.state, self.progress, self.part_count]
         except:
