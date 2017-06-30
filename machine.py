@@ -42,6 +42,7 @@ class Machine:
         self.log.info("Software version: " + str(self.VERSION))
         self.ID = m_id
         self.log.info("Station number: " + str(self.ID))
+
     ####################
     ## HELPER METHODS ##
     ####################
@@ -74,11 +75,12 @@ class Machine:
         self.mbtcp_in_force_shutdown = mbtcp_co[3]
         # HOLDING REGISTERS
         mbtcp_hr = context.getValues(3, 0x00, count=2)
-        if mbtcp_hr[0] == 0:
-            self.mbtcp_in_machiningtime = self.MACH_TIME
-            context.setValues(3, 0x00, [self.mbtcp_in_machiningtime])
-        else: self.mbtcp_in_machiningtime = mbtcp_hr[0]
         self.mbtcp_in_mode = mbtcp_hr[1]
+        if mbtcp_hr[0] < 100:
+            mbtcp_out_machtime = self.MACH_TIME * 1000
+            context.setValues(3, 0x00, [mbtcp_out_machtime])
+        else: 
+            self.MACH_TIME = mbtcp_hr[0] / 1000.0
 
     def __push_mbtcp_out(self, context):
         mbtcp_di = [self.estop_state,self.door_state,self.chuck_state,self.stock_present]
@@ -86,7 +88,8 @@ class Machine:
         mbtcp_co = [self.mbtcp_in_reset_part]
         context.setValues(2, 0x00, mbtcp_di)
         context.setValues(4, 0x00, mbtcp_ir)
-        context.setValues(1,0x01, mbtcp_co)
+        context.setValues(1, 0x01, mbtcp_co)
+        
 
 
     ###########################
@@ -117,15 +120,15 @@ class Machine:
         self.__door("CLOSED")
         # if self.part_count == 10000:
         #     self.state = self.MACHINE_STATES["TROUBLE"]
-        if self.stock_present == False:
-            self.log.error("Stock removed from chuck!")
-            self.progress = 0
-            self.mach_end_time = None
-            self.state = self.MACHINE_STATES["FINISHED"]
         t = time.time()
         if self.mach_end_time == None:
             self.mach_start_time = t
             self.mach_end_time = t + self.MACH_TIME
+        if self.stock_present == False and t < self.mach_end_time:
+            self.log.error("Stock removed from chuck!")
+            self.progress = 0
+            self.mach_end_time = None
+            self.state = self.MACHINE_STATES["FINISHED"]
         elif t >= self.mach_end_time:
             self.progress = 100
             self.mach_end_time = None

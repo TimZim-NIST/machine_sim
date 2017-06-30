@@ -31,7 +31,7 @@ import time, signal, sys, logging, ConfigParser, serial
 PERF_MON = False
 
 # Machine_sim version increment upon major changes
-SW_VERSION = 1
+SW_VERSION = 2
 ser = None
 cfg_station_number = None
 last_lcd = ""
@@ -101,15 +101,15 @@ def lcd_string_creator(machine_station_num, machine_state, machine_progress, mac
 
                 if machined_parts < 10   and machine_state == 4:
                     lcd = "STOPPED    Sta:" + str(machine_station_num) + "Part Counter:  " + str(machined_parts)
-                elif machined_parts < 99 and machine_state == 4:
+                elif machined_parts > 99 and machine_state == 4:
                     lcd = "STOPPED    Sta:" + str(machine_station_num) + "Part Counter:" + str(machined_parts)
                 elif machined_parts > 9  and machine_state == 4:
                     lcd = "STOPPED    Sta:" + str(machine_station_num) + "Part Counter: " + str(machined_parts)
     # TROUBLE
 
                 if machined_parts < 10   and machine_state == 5:
-                    lcd = "TROUBLE    Sta:" + str(machine_station_num) + "Part Counter: " + str(machined_parts)
-                elif machined_parts < 99 and machine_state == 5:
+                    lcd = "TROUBLE    Sta:" + str(machine_station_num) + "Part Counter:  " + str(machined_parts)
+                elif machined_parts > 99 and machine_state == 5:
                     lcd = "TROUBLE    Sta:" + str(machine_station_num) + "Part Counter:" + str(machined_parts)
                 elif machined_parts > 9  and machine_state == 5:
                     lcd = "TROUBLE    Sta:" + str(machine_station_num) + "Part Counter: " + str(machined_parts)
