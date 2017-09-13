@@ -31,7 +31,7 @@ import time, signal, sys, logging, ConfigParser, serial
 PERF_MON = False
 
 # Machine_sim version increment upon major changes
-SW_VERSION = 2
+SW_VERSION = 3
 ser = None
 cfg_station_number = None
 last_lcd = ""
@@ -50,83 +50,89 @@ def __get_gpio(pin):
     else:
         return 1
 
-def lcd_string_creator(machine_station_num, machine_state, machine_progress, machined_parts):
+def lcd_string_creator(machine_station_num, machine_state, machine_progress, machined_parts, prox):
     global last_lcd
     if BBB:
         if ser.isOpen():
 
-    # UNLOADED
+            if prox == True:
+                p = "*"
+            else:
+                p = " "
 
-                if machined_parts < 10   and machine_state == 0:
-                    lcd = "UNLOADED   Sta:" + str(machine_station_num) + "Part Counter:  " + str(machined_parts)
-                elif machined_parts > 99 and machine_state == 0:
-                    lcd = "UNLOADED   Sta:" + str(machine_station_num) + "Part Counter:"  + str(machined_parts)
-                elif machined_parts > 9  and machine_state == 0:
-                    lcd = "UNLOADED   Sta:" + str(machine_station_num) + "Part Counter: "   + str(machined_parts)
-    # LOADED
+# UNLOADED
 
-                if machined_parts < 10   and machine_state == 1:
-                    lcd = "LOADED     Sta:" + str(machine_station_num) + "Part Counter:  " + str(machined_parts)
-                elif machined_parts > 99 and machine_state == 1:
-                    lcd = "LOADED     Sta:" + str(machine_station_num) + "Part Counter:"  + str(machined_parts)
-                elif machined_parts > 9  and machine_state == 1:
-                    lcd = "LOADED     Sta:" + str(machine_station_num) + "Part Counter: "   + str(machined_parts)
-    # ACTIVE
+            if machined_parts < 10   and machine_state == 0:
+                lcd = "UNLOADED"+p+"  Sta:" + str(machine_station_num) + "Part Counter:  " + str(machined_parts)
+            elif machined_parts > 99 and machine_state == 0:
+                lcd = "UNLOADED"+p+"  Sta:" + str(machine_station_num) + "Part Counter:"  + str(machined_parts)
+            elif machined_parts > 9  and machine_state == 0:
+                lcd = "UNLOADED"+p+"  Sta:" + str(machine_station_num) + "Part Counter: "   + str(machined_parts)
+# LOADED
 
-                total_bars = ""
-                bars = int(machine_progress/10)
-                total_spaces = ""
-                spaces = abs(bars - 13)
+            if machined_parts < 10   and machine_state == 1:
+                lcd = "LOADED"+ p +"    Sta:" + str(machine_station_num) + "Part Counter:  " + str(machined_parts)
+            elif machined_parts > 99 and machine_state == 1:
+                lcd = "LOADED"+ p +"    Sta:" + str(machine_station_num) + "Part Counter:"  + str(machined_parts)
+            elif machined_parts > 9  and machine_state == 1:
+                lcd = "LOADED"+p+"    Sta:" + str(machine_station_num) + "Part Counter: "   + str(machined_parts)
+# ACTIVE
 
-                if machine_progress > 0:
-                    for i in range(bars):
-                        total_bars =  total_bars + b"\xff"
-                    for j in range (spaces):
-                        total_spaces = total_spaces + " "
+            total_bars = ""
+            bars = int(machine_progress/10)
+            total_spaces = ""
+            spaces = abs(bars - 13)
 
-                if machine_progress < 10 and machine_state == 2:
-                    total_spaces = "              "
-                    lcd = "ACTIVE     Sta:" + str(machine_station_num) + total_bars + total_spaces + str(machine_progress) + "%"
-                elif machine_progress >= 10 and machine_progress < 100:
-                    lcd = "ACTIVE     Sta:" + str(machine_station_num) + total_bars + total_spaces + str(machine_progress) + "%"
-    # FINISHED
+            if machine_progress > 0:
+                for i in range(bars):
+                    total_bars =  total_bars + b"\xff"
+                for j in range (spaces):
+                    total_spaces = total_spaces + " "
 
-                if machined_parts < 10   and machine_state == 3:
-                    lcd = "FINISHED   Sta:" + str(machine_station_num) + "Part Counter:  " + str(machined_parts)
-                elif machined_parts > 99 and machine_state == 3:
-                    lcd = "FINISHED   Sta:" + str(machine_station_num) + "Part Counter:"   + str(machined_parts)
-                elif machined_parts > 9  and machine_state == 3:
-                    lcd = "FINISHED   Sta:" + str(machine_station_num) + "Part Counter: "  + str(machined_parts)
-    # STOPPED
+            if machine_progress < 10 and machine_state == 2:
+                total_spaces = "              "
+                lcd = "ACTIVE"+p+"    Sta:" + str(machine_station_num) + total_bars + total_spaces + str(machine_progress) + "%"
+            elif machine_progress >= 10 and machine_progress < 100:
+                lcd = "ACTIVE"+p+"    Sta:" + str(machine_station_num) + total_bars + total_spaces + str(machine_progress) + "%"
+# FINISHED
 
-                if machined_parts < 10   and machine_state == 4:
-                    lcd = "STOPPED    Sta:" + str(machine_station_num) + "Part Counter:  " + str(machined_parts)
-                elif machined_parts > 99 and machine_state == 4:
-                    lcd = "STOPPED    Sta:" + str(machine_station_num) + "Part Counter:" + str(machined_parts)
-                elif machined_parts > 9  and machine_state == 4:
-                    lcd = "STOPPED    Sta:" + str(machine_station_num) + "Part Counter: " + str(machined_parts)
-    # TROUBLE
+            if machined_parts < 10   and machine_state == 3:
+                lcd = "FINISHED"+p+"  Sta:" + str(machine_station_num) + "Part Counter:  " + str(machined_parts)
+            elif machined_parts > 99 and machine_state == 3:
+                lcd = "FINISHED"+p+"  Sta:" + str(machine_station_num) + "Part Counter:"   + str(machined_parts)
+            elif machined_parts > 9  and machine_state == 3:
+                lcd = "FINISHED"+p+"  Sta:" + str(machine_station_num) + "Part Counter: "  + str(machined_parts)
+# STOPPED
 
-                if machined_parts < 10   and machine_state == 5:
-                    lcd = "TROUBLE    Sta:" + str(machine_station_num) + "Part Counter:  " + str(machined_parts)
-                elif machined_parts > 99 and machine_state == 5:
-                    lcd = "TROUBLE    Sta:" + str(machine_station_num) + "Part Counter:" + str(machined_parts)
-                elif machined_parts > 9  and machine_state == 5:
-                    lcd = "TROUBLE    Sta:" + str(machine_station_num) + "Part Counter: " + str(machined_parts)
+            if machined_parts < 10   and machine_state == 4:
+                lcd = "STOPPED    Sta:" + str(machine_station_num) + "Part Counter:  " + str(machined_parts)
+            elif machined_parts > 99 and machine_state == 4:
+                lcd = "STOPPED    Sta:" + str(machine_station_num) + "Part Counter:" + str(machined_parts)
+            elif machined_parts > 9  and machine_state == 4:
+                lcd = "STOPPED    Sta:" + str(machine_station_num) + "Part Counter: " + str(machined_parts)
+# TROUBLE
 
-   # Write to the lcd screen
+            if machined_parts < 10   and machine_state == 5:
+                lcd = "TROUBLE"+p+"   Sta:" + str(machine_station_num) + "Part Counter:  " + str(machined_parts)
+            elif machined_parts > 99 and machine_state == 5:
+                lcd = "TROUBLE"+p+"   Sta:" + str(machine_station_num) + "Part Counter:" + str(machined_parts)
+            elif machined_parts > 9  and machine_state == 5:
+                lcd = "TROUBLE"+p+"   Sta:" + str(machine_station_num) + "Part Counter: " + str(machined_parts)
 
-                if last_lcd != lcd:
-                    last_lcd = lcd
-                    ser.write("\xfe\x80")
-                    ser.write(lcd)
+# Write to the lcd screen
+
+            if last_lcd != lcd:
+                last_lcd = lcd
+                ser.write("\xfe\x80")
+                ser.write(lcd)
+                    
 # Iterate the state machine (used by LoopingCall)
 def machine_iterate(a):
     global ser, cfg_station_number
 
     if BBB and PERF_MON: GPIO.output("GPIO1_28",1)
     machine_values =  a[0].iterate(a[1], __get_gpio("GPIO0_7"))
-    lcd_string = lcd_string_creator(cfg_station_number, machine_values[0], machine_values[1], machine_values[2])
+    lcd_string = lcd_string_creator(cfg_station_number, machine_values[0], machine_values[1], machine_values[2], machine_values[3])
     if BBB and PERF_MON: GPIO.output("GPIO1_28",0)
 
 def main():

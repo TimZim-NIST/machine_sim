@@ -228,7 +228,7 @@ class Machine:
             self.__heartbeat()
             self.__force_shutdown()
             self.__push_mbtcp_out(a[0])
-            return [self.state, self.progress, self.part_count]
+            return [self.state, self.progress, self.part_count, self.mbtcp_in_robotprox]
         except:
             print "Unexpected error: " + str(traceback.print_exc())
             raise
