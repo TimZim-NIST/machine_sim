@@ -17,13 +17,14 @@ if BBB:
     import Adafruit_BBIO.GPIO as GPIO
     import Adafruit_BBIO.UART as UART
 
-from pymodbus.server.async import StartTcpServer
-from pymodbus.device       import ModbusDeviceIdentification
-from pymodbus.datastore    import ModbusSequentialDataBlock
-from pymodbus.datastore    import ModbusSlaveContext, ModbusServerContext
-from twisted.internet      import reactor
-from twisted.internet.task import LoopingCall
-from machine               import Machine
+from pymodbus.server.async     import StartTcpServer
+from pymodbus.device           import ModbusDeviceIdentification
+from pymodbus.datastore        import ModbusSequentialDataBlock
+from pymodbus.datastore        import ModbusSlaveContext, ModbusServerContext
+from twisted.internet          import reactor
+from twisted.internet.task     import LoopingCall
+from machine                   import Machine
+from machine_webpage_generator import Generator
 
 import time, signal, sys, logging, ConfigParser, serial
 
@@ -31,7 +32,7 @@ import time, signal, sys, logging, ConfigParser, serial
 PERF_MON = False
 
 # Machine_sim version increment upon major changes
-SW_VERSION = 3
+SW_VERSION = 4
 ser = None
 cfg_station_number = None
 last_lcd = ""
@@ -135,6 +136,9 @@ def machine_iterate(a):
     lcd_string = lcd_string_creator(cfg_station_number, machine_values[0], machine_values[1], machine_values[2], machine_values[3])
     if BBB and PERF_MON: GPIO.output("GPIO1_28",0)
 
+def www_update(a):
+    a[0].update()
+
 def main():
     global ser, cfg_station_number
 
@@ -151,7 +155,7 @@ def main():
 
     # Configure logging
     log = logging.getLogger()
-    log.setLevel(logging.INFO)
+    log.setLevel(logging.WARN)
     logging.basicConfig(format='%(asctime)-15s %(levelname)s:%(message)s')
 
     # Variables from Configuration file
@@ -162,6 +166,7 @@ def main():
         cfg_machine_time = config.getfloat("Station","machine_time")
         cfg_sensor_GPIO = config.get("Station","sensor_GPIO")
         cfg_simulation_frequency = config.getint("Station","simulation_frequency")
+        cfg_generate_webpages = config.getboolean("Station","enable_webpages")
     except:
         log.error("Error while parsing configuration file.")
         exit()
@@ -194,9 +199,18 @@ def main():
     # Configuration file to obtain these parameters, and pass to object
     machine = Machine(cfg_machine_time, SW_VERSION, cfg_station_number)
 
-    # Create the loop using the Twisted framework
-    loop = LoopingCall(f=machine_iterate, a=(machine, context))
-    loop.start((1.0/cfg_simulation_frequency), now=False)
+    # Create the webpage generator
+    if cfg_generate_webpages:
+        webpage = Generator(cfg_station_number, context)
+
+    # Create the machine loop using the Twisted framework
+    machine_loop = LoopingCall(f=machine_iterate, a=(machine, context))
+    machine_loop.start((1.0/cfg_simulation_frequency), now=False)
+
+    # Create the webpage update loop
+    if cfg_generate_webpages:
+        www_loop = LoopingCall(f=www_update, a=(webpage, context))
+        www_loop.start(1.0, now=False)
 
     # Start the MODBUS server
     StartTcpServer(context)
