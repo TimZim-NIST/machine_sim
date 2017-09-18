@@ -8,7 +8,6 @@ class Machine:
     MACH_TIME           = 6.0
     OP_STATES           = { "OPEN":0, "CLOSED":1 }
     MACHINE_STATES      = { "UNLOADED":0,"LOADED":1,"ACTIVE":2,"FINISHED":3, "STOPPED":4, "TROUBLE":5 }
-    TOOL_STATES         = { "GOOD":0, "BAD":1 }
     PART_RESET_STATES   = { "OFF":0, "ON":1 }
     VERSION             = 9999
 
@@ -18,7 +17,6 @@ class Machine:
     mach_end_time       = None
     door_state          = OP_STATES["OPEN"]
     chuck_state         = OP_STATES["OPEN"]
-    tool_state          = TOOL_STATES["GOOD"]
     reset_partctr       = PART_RESET_STATES["OFF"]
     estop_state         = True
     heartbeat           = 0
@@ -27,8 +25,8 @@ class Machine:
     progress            = 0
     stock_present       = False
     mbtcp_in_robotprox  = False
-    repair_time         = 5
-    repairs_complete    = 0
+    repair_time         = 10
+    trouble_counter     = 0
 
     # http://stackoverflow.com/questions/483666/python-reverse-invert-a-mapping
     STATE_STRING_LOOKUP = {v: k for k, v in MACHINE_STATES.iteritems()}
@@ -157,21 +155,17 @@ class Machine:
         return
 
     def __state_trouble(self):
-    #   self.tool_state("BAD")
         self.__door("OPEN")
-        self.log.warning("REPAIR INITIATED")
+        self.log.warning("TROUBLE CALL")
         if self.repair_end_time == None:
             self.repair_start_time = t
             self.repair_end_time = t + self.repair_time
         elif t >= self.repair_end_time:
             self.repair_end_time = None
             self.__door("CLOSED")
-            self.log.warning("REPAIR COMPLETE")
-    #       self.tool_state("GOOD")
+            self.log.warning("TROUBLE CLEARED")
             self.state = self.MACHINE_STATES["ACTIVE"]
-    #       self.repairs_complete = 1 + self.repairs_complete
-        else:
-            self.log.error("REPAIR FAILED")
+            self.trouble_counter = 1 + self.trouble_counter
         return
 
     def __part_reset(self):

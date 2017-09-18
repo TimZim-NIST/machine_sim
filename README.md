@@ -89,8 +89,27 @@ If connection sharing is required, follow this guide: https://elementztechblog.w
 ```
 Listen 80
 ```
-7. Reboot the BBB: ```shutdown -r now```
-8. Configure USB networking. The USB interface should be configured with 192.168.7.<beaglebone number> To make ssh connections easier, each usb0 interface should be configured with a 192.168.7.y IP address, where y = the board's serial number, located on the top of the Ethernet RJ-45 connector (DO NOT FORGET TO UPDATE THE NETMASK TO 255.255.255.0):
+7. Edit ```/etc/apache2/sites-enabled/000-default.conf``` to listen on port 80:
+```
+<VirtualHost *:80>
+```
+and add the following to alias the simulator web pages:
+```
+  Alias /status "/dev/shm/status"
+  <Directory "/dev/shm/status">
+    AuthType Basic
+    AuthName "Restricted Content"
+    AuthUserFile /etc/apache2/.htpasswd
+    Require valid-user
+  </Directory>
+
+```
+8. Generate the .htpasswd file with the credentials (admin:1234):
+```
+$ sudo htpasswd -c /etc/apache2/.htpasswd admin
+```
+9. Reboot the BBB: ```shutdown -r now```
+10. Configure USB networking. The USB interface should be configured with 192.168.7.<beaglebone number> To make ssh connections easier, each usb0 interface should be configured with a 192.168.7.y IP address, where y = the board's serial number, located on the top of the Ethernet RJ-45 connector (DO NOT FORGET TO UPDATE THE NETMASK TO 255.255.255.0):
 ```
 cd /etc/networking
 sudo nano interfaces
@@ -104,7 +123,7 @@ iface usb0 inet static
     network 192.168.7.0
     gateway 192.168.7.1
 ```
-9. Configure Ethernet networking using connmanctl. The eth0 interface should be configured with a 192.168.1.10x IP address, where x = the station number, in order to operate properly in the NIST testbed.
+11. Configure Ethernet networking using connmanctl. The eth0 interface should be configured with a 192.168.1.10x IP address, where x = the station number, in order to operate properly in the NIST testbed.
 ```
 sudo -s
 connmanctl
@@ -113,29 +132,33 @@ connmanctl
 > Exit
 systemctl restart networking
 ```
-10. Add a new user called 'machine' to the environment: ```adduser machine```. Add this user to the sudo group: ```usermod -aG sudo machine```. Exit the SSH session and reconnect as 'machine'.
-11. Disable the 'debian' user: ```chage -E 0 debian```.
-12. Add the following alias in ```~/.bashrc```:
+12. Add a new user called 'machine' to the environment: ```adduser machine```. Add this user to the sudo group: ```usermod -aG sudo machine```. Exit the SSH session and reconnect as 'machine'.
+13. Disable the 'debian' user: ```chage -E 0 debian```.
+14. Add the following alias in ```~/.bashrc```:
 ```
   alias ll='ls -al'
 ```
-13. Install the following packages:
+15. Install the following packages:
 ```
   apt install python-pymodbus python-twisted
 ```
-14. Configure GPIO pin UART1 for the LCD by going to ```cd /boot/uEnv.txt```. Change the following:
+16. Configure GPIO pin UART1 for the LCD by going to ```cd /boot/uEnv.txt```. Change the following:
 ```
 ##Example v4.1.x,
 # cape_disable=bone_capemgr.disable_partno=
 cape_enable=bone_capemgr.enable_partno=BB-UART1
 ```
-15. Add the bash shell script as a cron job that executes every minute to check if the machine is running. Execute: ```crontab -e```. NOTE: It may be smart to comment this line out in the cron table until you're ready to have the machine run automatically:
+17. Add the bash shell script as a cron job that executes every minute to check if the machine is running. Execute: ```crontab -e```. NOTE: It may be smart to comment this line out in the cron table until you're ready to have the machine run automatically:
 ```
   * * * * * /home/machine/Projects/machine_sim/machine_check.sh
 ```
-16. Install the 'ntp' package: ```apt install ntp```. Open NTP Configuration: ```cd /etc``` and Edit the NTP configuration: ```nano ntp.conf```. Comment out all default NTP pool servers, and add the following:
+18. Install the 'ntp' package: ```apt install ntp```. Open NTP Configuration: ```cd /etc``` and Edit the NTP configuration: ```nano ntp.conf```. Comment out all default NTP pool servers, and add the following:
 ```
   server 192.168.1.2
   minpoll 4
   maxpoll 6
+```
+19. Upload the simulator code to the BBB with the upload.sh script:
+```
+$ ./upload.sh
 ```
