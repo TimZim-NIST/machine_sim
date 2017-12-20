@@ -1,3 +1,5 @@
+TODO: Add instructions for changing the hostname, disabling dnsmasq 172.1.8.1 forward, NTP, etc.
+
 # Machine Simulator
 
 The Python script simulates MODBUS TCP server operations implemented by machine tools a typical manufacturing environment. The script was written to be deployed on a Beaglebone Black. The machine operations are simulated with a simple state machine. MODBUS TCP registers are updated at the rate defined in SIMULATION_FREQ_HZ. The script does not operate in real-time, nor does the script attempt to compensate for any delays, so jitter will likely be present.
@@ -21,6 +23,9 @@ Adafruit BBIO - https://github.com/adafruit/adafruit-beaglebone-io-python<br />
 [1] RESET - Resets counters<br />
 [2] ROBOT_PROXIMITY - Informs if the robot is in proximity<br />
 [3] EXIT - Kill the python process<br />
+[4] INVALIDSTATE - Anomaly: Machine reports an invalid state (>0x05)<br />
+[5] TROUBLECALL - Anomaly: Machine reports trouble calls before each part<br />
+[6] SHUTDOWN - Anomaly: Machine enters the 'STOPPED' state during workcell operations<br />
 
 ##### Holding Registers (RW):
 [0] MACHINING_TIME - Amount of time machining process takes<br />
@@ -31,6 +36,8 @@ Adafruit BBIO - https://github.com/adafruit/adafruit-beaglebone-io-python<br />
 [1] DOOR_STATE - Status of the door (True=CLOSED)<br />
 [2] CHUCK_STATE - Status of the chuck (True=CLOSED)<br />
 [3] STOCK_PRESENT - Stock is in the chuck<br />
+[4] INSPECTION_PASS - Current part PASSED inspection<br />
+[5] INSPECTION_FAIL - Current part FAILED inspection<br />
 
 ##### Input Registers (RO):
 [0] STATE - Numerical state of the state machine<br />
@@ -40,6 +47,8 @@ Adafruit BBIO - https://github.com/adafruit/adafruit-beaglebone-io-python<br />
 [4] HEARTBEAT_COUNTER - Monitor to verify sim is running<br />
 [5] MACHINE_ID - ID value for the machine (station number)<br />
 [6] SW_VERSION - Software version number<br />
+[7] INSPECTION_PASS - Counter for parts that passed inspection<br />
+[8] INSPECTION_FAIL - Counter for parts that failed inspection<br />
 
 ### Upgrade the BBB
 The most recent revision of this project uses the following image:

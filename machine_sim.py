@@ -32,7 +32,7 @@ import time, signal, sys, logging, ConfigParser, serial
 PERF_MON = False
 
 # Machine_sim version increment upon major changes
-SW_VERSION = 5
+SW_VERSION = 9
 ser = None
 cfg_station_number = None
 last_lcd = ""
@@ -79,7 +79,7 @@ def lcd_string_creator(machine_station_num, machine_state, machine_progress, mac
                 elif machined_parts > 99:
                     lcd = "LOADED"+ p +"    Sta:" + str(machine_station_num) + "Part Counter:"  + str(machined_parts)
                 elif machined_parts > 9:
-                    lcd = "LOADED"+p+"    Sta:" + str(machine_station_num) + "Part Counter: "   + str(machined_parts)
+                    lcd = "LOADED"+ p +"    Sta:" + str(machine_station_num) + "Part Counter: "   + str(machined_parts)
             
             # ACTIVE
             elif machine_state == 2:
@@ -92,11 +92,14 @@ def lcd_string_creator(machine_station_num, machine_state, machine_progress, mac
                         total_bars =  total_bars + b"\xff"
                     for j in range (spaces):
                         total_spaces = total_spaces + " "
+                msg = "ACTIVE"+p+"   "
+                if cfg_station_number == 4:
+                    msg = "MEASURING"+p
                 if machine_progress < 10:
                     total_spaces = "              "
-                    lcd = "ACTIVE"+p+"    Sta:" + str(machine_station_num) + total_bars + total_spaces + str(machine_progress) + "%"
+                    lcd = msg + " Sta:" + str(machine_station_num) + total_bars + total_spaces + str(machine_progress) + "%"
                 elif machine_progress >= 10 and machine_progress < 100:
-                    lcd = "ACTIVE"+p+"    Sta:" + str(machine_station_num) + total_bars + total_spaces + str(machine_progress) + "%"
+                    lcd = msg + " Sta:" + str(machine_station_num) + total_bars + total_spaces + str(machine_progress) + "%"
 
             # FINISHED
             elif machine_state == 3:
@@ -142,7 +145,6 @@ def lcd_string_creator(machine_station_num, machine_state, machine_progress, mac
 # Iterate the state machine (used by LoopingCall)
 def machine_iterate(a):
     global ser, cfg_station_number
-
     if BBB and PERF_MON: GPIO.output("GPIO1_28",1)
     machine_values =  a[0].iterate(a[1], __get_gpio("GPIO0_7"))
     lcd_string = lcd_string_creator(cfg_station_number, machine_values[0], machine_values[1], machine_values[2], machine_values[3])
@@ -159,16 +161,16 @@ def main():
 
     # Configure the MODBUS server datastore
     store = ModbusSlaveContext(
-        di = ModbusSequentialDataBlock(1, [0]*5),
-        co = ModbusSequentialDataBlock(1, [0]*5),
+        di = ModbusSequentialDataBlock(1, [0]*7),
+        co = ModbusSequentialDataBlock(1, [0]*10),
         hr = ModbusSequentialDataBlock(1, [0]*3),
-        ir = ModbusSequentialDataBlock(1, [0]*7))
+        ir = ModbusSequentialDataBlock(1, [0]*9))
     context = ModbusServerContext(slaves=store, single=True)
 
     # Configure logging
     log = logging.getLogger()
     log.setLevel(logging.WARN)
-    logging.basicConfig(format='%(asctime)-15s %(levelname)s:%(message)s')
+    logging.basicConfig(format='%(created)f %(levelname)s:%(message)s')
 
     # Variables from Configuration file
     try:

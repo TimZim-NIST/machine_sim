@@ -25,8 +25,19 @@ class Machine:
     progress            = 0
     stock_present       = False
     mbtcp_in_robotprox  = False
-    repair_time         = 10
+    repair_time         = 10.0
+    repair_end_time     = None
     trouble_counter     = 0
+    inspect_pass        = False
+    inspect_fail        = False
+    passed_parts        = 0
+    failed_parts        = 0
+
+
+    mbtcp_anomaly_invalidstate = None
+    mbtcp_anomaly_troublecall  = None
+    mbtcp_anomaly_shutdown     = None 
+    mbtcp_anomaly_doorsensor   = None
 
     # http://stackoverflow.com/questions/483666/python-reverse-invert-a-mapping
     STATE_STRING_LOOKUP = {v: k for k, v in MACHINE_STATES.iteritems()}
@@ -45,12 +56,13 @@ class Machine:
     ## HELPER METHODS ##
     ####################
     def __door(self, op):
-        if op == "OPEN" and self.door_state == self.OP_STATES["CLOSED"]:
-            self.door_state = self.OP_STATES["OPEN"]
-            self.log.info("Door is OPEN")
-        elif op == "CLOSED" and self.door_state == self.OP_STATES["OPEN"]:
-            self.door_state = self.OP_STATES["CLOSED"]
-            self.log.info("Door is CLOSED")
+        if not self.mbtcp_anomaly_doorsensor:
+            if op == "OPEN" and self.door_state == self.OP_STATES["CLOSED"]:
+                self.door_state = self.OP_STATES["OPEN"]
+                self.log.info("Door is OPEN")
+            elif op == "CLOSED" and self.door_state == self.OP_STATES["OPEN"]:
+                self.door_state = self.OP_STATES["CLOSED"]
+                self.log.info("Door is CLOSED")
 
     def __chuck(self, op):
         if op == "OPEN" and self.chuck_state == self.OP_STATES["CLOSED"]:
@@ -60,17 +72,42 @@ class Machine:
             self.chuck_state = self.OP_STATES["CLOSED"]
             self.log.info("Chuck is CLOSED")
 
+    def __get_machinestate(self):
+        if self.mbtcp_anomaly_invalidstate: 
+            return 35210 
+        else: 
+             return self.state
+
+    def __inspection(self):
+        # Don't continue if we've already inspected the part
+        if not(self.inspect_pass or self.inspect_fail):
+            # Accept all parts for now, except when inspection failure anomaly is enabled
+            if self.mbtcp_anomaly_inspectfail:
+                self.failed_parts = self.failed_parts + 1
+                self.inspect_fail = True
+                return True
+            else:
+                self.passed_parts = self.passed_parts + 1
+                self.inspect_pass = True
+                return False
+
+
 
     ###################
     ## MBTCP METHODS ##
     ###################
     def __parse_mbtcp_in(self, context):
         # COILS
-        mbtcp_co = context.getValues(1, 0x00, count=4)
-        self.mbtcp_in_estop          = mbtcp_co[0]
-        self.mbtcp_in_reset_part     = mbtcp_co[1]
-        self.mbtcp_in_robotprox      = mbtcp_co[2]
-        self.mbtcp_in_force_shutdown = mbtcp_co[3]
+        mbtcp_co = context.getValues(1, 0x00, count=9)
+        self.mbtcp_in_estop             = mbtcp_co[0]
+        self.mbtcp_in_reset_part        = mbtcp_co[1]
+        self.mbtcp_in_robotprox         = mbtcp_co[2]
+        self.mbtcp_in_force_shutdown    = mbtcp_co[3]
+        self.mbtcp_anomaly_invalidstate = mbtcp_co[4]
+        self.mbtcp_anomaly_troublecall  = mbtcp_co[5]
+        self.mbtcp_anomaly_shutdown     = mbtcp_co[6]
+        self.mbtcp_anomaly_inspectfail  = mbtcp_co[7]
+        self.mbtcp_anomaly_doorsensor   = mbtcp_co[8]
         # HOLDING REGISTERS
         mbtcp_hr = context.getValues(3, 0x00, count=2)
         self.mbtcp_in_mode = mbtcp_hr[1]
@@ -81,8 +118,8 @@ class Machine:
             self.MACH_TIME = mbtcp_hr[0] / 1000.0
 
     def __push_mbtcp_out(self, context):
-        mbtcp_di = [self.estop_state,self.door_state,self.chuck_state,self.stock_present]
-        mbtcp_ir = [self.state,self.machine_mode,self.progress,self.part_count,self.heartbeat,self.ID,self.VERSION]
+        mbtcp_di = [self.estop_state,self.door_state,self.chuck_state,self.stock_present,self.inspect_pass,self.inspect_fail]
+        mbtcp_ir = [self.__get_machinestate(),self.machine_mode,self.progress,self.part_count,self.heartbeat,self.ID,self.VERSION,self.passed_parts,self.failed_parts]
         mbtcp_co = [self.mbtcp_in_reset_part]
         context.setValues(2, 0x00, mbtcp_di)
         context.setValues(4, 0x00, mbtcp_ir)
@@ -93,6 +130,7 @@ class Machine:
     ###########################
     ## MACHINE STATE METHODS ##
     ###########################
+
     def __state_unloaded(self):
         self.__door("OPEN")
         self.__chuck("OPEN")
@@ -100,7 +138,7 @@ class Machine:
         if self.stock_present == True:
             self.state = self.MACHINE_STATES["LOADED"]
         # If the stop switch is toggled we go to the STOPPED state
-        if self.mbtcp_in_mode == 0:
+        if self.mbtcp_in_mode == 0 or self.mbtcp_anomaly_shutdown:
             self.state = self.MACHINE_STATES["STOPPED"]
         return
 
@@ -108,7 +146,10 @@ class Machine:
         # Close the chuck
         self.__chuck("CLOSED")
         if self.mbtcp_in_robotprox == False and self.stock_present == True:
-            self.state = self.MACHINE_STATES["ACTIVE"]
+            if self.mbtcp_anomaly_troublecall:
+                self.state = self.MACHINE_STATES["TROUBLE"]
+            else:
+                self.state = self.MACHINE_STATES["ACTIVE"]
         elif self.stock_present == False:
             self.state = self.MACHINE_STATES["UNLOADED"]
         return
@@ -116,8 +157,6 @@ class Machine:
     def __state_active(self):
         # Close the door
         self.__door("CLOSED")
-        # if self.part_count == 10000:
-        #     self.state = self.MACHINE_STATES["TROUBLE"]
         t = time.time()
         if self.mach_end_time == None:
             self.mach_start_time = t
@@ -140,37 +179,46 @@ class Machine:
     def __state_finished(self):
         self.__chuck("OPEN")
         self.__door("OPEN")
+        if self.ID == 4 and self.progress == 100: 
+            self.__inspection()
         # Wait for robot to retrieve part
         if self.stock_present == False:
             self.progress = 0
+            if self.ID == 4: 
+                self.inspect_pass = False
+                self.inspect_fail = False
             self.state = self.MACHINE_STATES["UNLOADED"]
         return
 
-
     def __state_stopped(self):
         self.log.info("STOPPED")
-        if self.mbtcp_in_mode == 1:
-            self.state = self.MACHINE_STATES["UNLOADED"]
+        if self.mbtcp_in_mode == 1 and not self.mbtcp_anomaly_shutdown:
+            if self.stock_present == True:
+                self.state = self.MACHINE_STATES["LOADED"]
+            else:
+                self.state = self.MACHINE_STATES["UNLOADED"]
         self.machine_mode = self.mbtcp_in_mode
         return
 
     def __state_trouble(self):
         self.__door("OPEN")
-        self.log.warning("TROUBLE CALL")
+        t = time.time()
+        self.log.info("TROUBLE CALL")
         if self.repair_end_time == None:
-            self.repair_start_time = t
             self.repair_end_time = t + self.repair_time
         elif t >= self.repair_end_time:
             self.repair_end_time = None
             self.__door("CLOSED")
-            self.log.warning("TROUBLE CLEARED")
+            self.log.info("TROUBLE CLEARED")
             self.state = self.MACHINE_STATES["ACTIVE"]
             self.trouble_counter = 1 + self.trouble_counter
         return
 
     def __part_reset(self):
         if self.mbtcp_in_reset_part == True:
-            self.part_count = 0
+            self.part_count   = 0
+            self.passed_parts = 0
+            self.failed_parts = 0
             self.mbtcp_in_reset_part = False
         return
 
