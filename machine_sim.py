@@ -32,7 +32,7 @@ import time, signal, sys, logging, ConfigParser, serial
 PERF_MON = False
 
 # Machine_sim version increment upon major changes
-SW_VERSION = 9
+SW_VERSION = 10
 ser = None
 cfg_station_number = None
 last_lcd = ""
@@ -169,7 +169,7 @@ def main():
 
     # Configure logging
     log = logging.getLogger()
-    log.setLevel(logging.WARN)
+    log.setLevel(logging.INFO)
     logging.basicConfig(format='%(created)f %(levelname)s:%(message)s')
 
     # Variables from Configuration file
@@ -181,6 +181,7 @@ def main():
         cfg_sensor_GPIO = config.get("Station","sensor_GPIO")
         cfg_simulation_frequency = config.getint("Station","simulation_frequency")
         cfg_generate_webpages = config.getboolean("Station","enable_webpages")
+        cfg_generate_statelogger = config.getboolean("Station","enable_statelogger")
     except:
         log.error("Error while parsing configuration file.")
         exit()
@@ -189,6 +190,7 @@ def main():
     log.info("Machine time: " + str(cfg_machine_time))
     log.info("Sensor GPIO: " + cfg_sensor_GPIO)
     log.info("Simulation frequency: " + str(cfg_simulation_frequency))
+    if cfg_generate_statelogger == True: log.info("State logger enabled!")
 
     # LCD splash-screen
     if BBB:
@@ -213,7 +215,7 @@ def main():
 
 
     # Configuration file to obtain these parameters, and pass to object
-    machine = Machine(cfg_machine_time, SW_VERSION, cfg_station_number)
+    machine = Machine(cfg_machine_time, SW_VERSION, cfg_station_number, cfg_generate_statelogger)
 
     # Create the webpage generator
     if cfg_generate_webpages:

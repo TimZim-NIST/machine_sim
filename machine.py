@@ -33,11 +33,12 @@ class Machine:
     passed_parts        = 0
     failed_parts        = 0
 
-
     mbtcp_anomaly_invalidstate = None
     mbtcp_anomaly_troublecall  = None
     mbtcp_anomaly_shutdown     = None 
     mbtcp_anomaly_doorsensor   = None
+
+    statelogger = None
 
     # http://stackoverflow.com/questions/483666/python-reverse-invert-a-mapping
     STATE_STRING_LOOKUP = {v: k for k, v in MACHINE_STATES.iteritems()}
@@ -45,12 +46,13 @@ class Machine:
     # Configure logging
     log = logging.getLogger()
 
-    def __init__(self,m_t,ver,m_id):
+    def __init__(self,m_t,ver,m_id,cfg_statelogger):
         self.MACH_TIME = m_t
         self.VERSION = ver
         self.log.info("Software version: " + str(self.VERSION))
         self.ID = m_id
         self.log.info("Station number: " + str(self.ID))
+        self.enable_statelogger = cfg_statelogger
 
     ####################
     ## HELPER METHODS ##
@@ -125,7 +127,33 @@ class Machine:
         context.setValues(4, 0x00, mbtcp_ir)
         context.setValues(1, 0x01, mbtcp_co)
         
+    ##################################
+    ## MACHINE STATE LOGGER METHODS ##
+    ##################################
 
+    def __start_statelogger(self):
+        if self.enable_statelogger == False: return
+        try:
+            fname = "/dev/shm/" + time.strftime("%m-%d-%Y") + "_" + time.strftime("%H-%M") + "_Sta" + str(self.ID) + "_States.dat"
+            self.statelogger = open(fname,'w')
+            self.statelogger.write("time,state,part\n")
+        except:
+            pass
+
+    def __stop_statelogger(self):
+        if self.enable_statelogger == False: return
+        if not (self.statelogger == None):
+            self.statelogger.close()
+        self.statelogger = None
+
+    def __log_statechange(self,s):
+        if self.enable_statelogger == False: return
+        if self.statelogger == None: return
+        try:
+            ts = format(time.time(),'0.3f')
+            self.statelogger.write(ts + "," + s + "," + str(self.part_count) + "\n")
+        except:
+            pass
 
     ###########################
     ## MACHINE STATE METHODS ##
@@ -191,8 +219,10 @@ class Machine:
         return
 
     def __state_stopped(self):
-        self.log.info("STOPPED")
+        self.log.debug("STOPPED")
+        self.__stop_statelogger()
         if self.mbtcp_in_mode == 1 and not self.mbtcp_anomaly_shutdown:
+            self.__start_statelogger()
             if self.stock_present == True:
                 self.state = self.MACHINE_STATES["LOADED"]
             else:
@@ -248,6 +278,7 @@ class Machine:
             # Report any state changes from the last iteration
             if self.state != self.last_state:
                 self.log.info("Machine is [" + self.STATE_STRING_LOOKUP[self.state] + "]")
+                self.__log_statechange(self.STATE_STRING_LOOKUP[self.state])
                 self.prev_state = self.last_state
                 self.last_state = self.state
             # State Machine

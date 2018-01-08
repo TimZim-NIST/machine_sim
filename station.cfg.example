@@ -4,3 +4,4 @@ machine_time = 6
 sensor_GPIO = "GPIO0_7"
 simulation_frequency = 10
 enable_webpages = True
+enable_statelogger = False
