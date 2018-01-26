@@ -8,10 +8,12 @@
 #
 # See README for description and information
 
-# Check if we are running on a BBB
-# Allows us to run the sim on a host without BBB packages
-import platform
-BBB = (platform.uname()[1] == "beaglebone")
+# Check if we are running on a BBB.
+# Allows us to run the sim on a host without BBB packages.
+# Pulls the MAC address from the host, and compares the first three
+# octets with the expected 'b0d5cc'.
+from uuid import getnode
+BBB = (hex(getnode())[2:8] == 'b0d5cc')
 
 if BBB:
     import Adafruit_BBIO.GPIO as GPIO
@@ -32,7 +34,7 @@ import time, signal, sys, logging, ConfigParser, serial
 PERF_MON = False
 
 # Machine_sim version increment upon major changes
-SW_VERSION = 10
+SW_VERSION = 11
 ser = None
 cfg_station_number = None
 last_lcd = ""
